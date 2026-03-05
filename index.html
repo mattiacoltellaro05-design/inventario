@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mint Inventory - Gestione Bottiglie</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .inventory-section {
+            padding: 32px 24px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            padding: 20px 24px;
+            border: none;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-remove {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .btn-remove:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(250, 112, 154, 0.4);
+        }
+
+        .scan-input {
+            width: 100%;
+            padding: 20px;
+            border: 2px dashed #e0e6ed;
+            border-radius: 16px;
+            text-align: center;
+            font-size: 16px;
+            color: #64748b;
+            background: #f8fafc;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .scan-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: white;
+            transform: scale(1.02);
+        }
+
+        .scan-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .quantity-selector {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .quantity-selector.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .qty-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .qty-btn {
+            padding: 12px 20px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .qty-btn:hover, .qty-btn.selected {
+            background: #4facfe;
+            color: white;
+            border-color: #4facfe;
+        }
+
+        .inventory-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .item-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .item-info p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .item-qty {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4facfe;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: #94a3b8;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #4facfe;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 480px) {
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .qty-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍸 Mint Inventory</h1>
+            <p>Gestisci il tuo magazzino bottiglie</p>
+        </div>
+
+        <div class="inventory-section">
+            <div class="action-buttons">
+                <button class="btn btn-add" onclick="startAdd()">
+                    <span>➕</span> Aggiungi
+                </button>
+                <button class="btn btn-remove" onclick="startRemove()">
+                    <span>➖</span> Finita
+                </button>
+            </div>
+
+            <div id="scanInputContainer">
+                <input type="text" class="scan-input" id="scanInput" 
+                       placeholder="Incolla qui il codice a barre o premi Invio..." 
+                       autocomplete="off">
+            </div>
+
+            <div id="quantitySelector" class="quantity-selector">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 id="currentItemName"></h3>
+                    <p id="currentBarcode"></p>
+                </div>
+                <div class="qty-group">
+                    <button class="qty-btn" data-qty="1">1</button>
+                    <button class="qty-btn" data-qty="6">6</button>
+                    <button class="qty-btn" data-qty="12">12</button>
+                    <button class="qty-btn" data-qty="24">24</button>
+                    <button class="qty-btn" data-qty="altro">Altro</button>
+                </div>
+                <div style="text-align: center;">
+                    <input type="number" id="customQty" class="scan-input" 
+                           placeholder="Quantità personalizzata" style="width: 200px; display: none;">
+                </div>
+            </div>
+
+            <div id="inventoryList" class="inventory-list"></div>
+            
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat">
+                    <div class="stat-number" id="totalItems">0</div>
+                    <div class="stat-label">Bottiglie totali</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="totalTypes">0</div>
+                    <div class="stat-label">Tipi diversi</div>
+                </div>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <path d="M3.27 6.96L12 12.09l8.73-5.13"/>
+                    <path d="M12 22.08V12"/>
+                </svg>
+                <h3>Nessuna bottiglia in magazzino</h3>
+                <p>Clicca "Aggiungi" per iniziare a scansionare</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('mintInventory')) || {};
+        let currentMode = null; // 'add' o 'remove'
+        let currentBarcode = null;
+
+        // Inizializza l'app
+        document.addEventListener('DOMContentLoaded', function() {
+            updateInventoryDisplay();
+            setupBarcodeInput();
+        });
+
+        function startAdd() {
+            currentMode = 'add';
+            showScanInput('Inserisci codice bottiglia da aggiungere');
+            document.querySelector('.btn-add').style.background = '#10b981';
+        }
+
+        function startRemove() {
+            currentMode = 'remove';
+            showScanInput('Inserisci codice bottiglia finita');
+            document.querySelector('.btn-remove').style.background = '#ef4444';
+        }
+
+        function showScanInput(placeholder) {
+            document.getElementById('scanInput').placeholder = placeholder;
+            document.getElementById('scanInputContainer').style.display = 'block';
+            document.getElementById('scanInput').focus();
+            document.getElementById('scanInput').select();
+        }
+
+        function setupBarcodeInput() {
+            const scanInput = document.getElementById('scanInput');
+            
+            scanInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const barcode = e.target.value.trim();
+                    if (barcode) {
+                        processBarcode(barcode);
+                    }
+                }
+            });
+
+            // Supporto per incollare codici
+            scanInput.addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    const barcode = e.target.value.trim();
+                    if (barcode) {
+                        processBarcode(barcode);
+                    }
+                }, 10);
+            });
+        }
+
+        function processBarcode(barcode) {
+            currentBarcode = barcode;
+            
+            if (currentMode === 'add') {
+                showQuantitySelector(barcode, 'Aggiungi bottiglia', true);
+            } else if (currentMode === 'remove') {
+                showQuantitySelector(barcode, 'Rimuovi bottiglia', false);
+            }
+        }
+
+        function showQuantitySelector(barcode, title, isAdd) {
+            document.getElementById('currentBarcode').textContent = `Codice: ${barcode}`;
+            document.getElementById('currentItemName').textContent = title;
+            document.getElementById('quantitySelector').classList.add('active');
+            document.getElementById('scanInputContainer').style.display = 'none';
+            
+            document.querySelectorAll('.qty-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                btn.onclick = null;
+            });
+            
+            setupQuantityButtons(isAdd, barcode);
+        }
+
+        function setupQuantityButtons(isAdd, barcode) {
+            document.querySelectorAll('.qty-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const qty = this.dataset.qty;
+                    if (qty === 'altro') {
+                        document.getElementById('customQty').style.display = 'inline-block';
+                        document.getElementById('customQty').focus();
+                        return;
+                    }
+                    processQuantity(qty, isAdd, barcode);
+                };
+            });
+
+            document.getElementById('customQty').onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    const qty = parseInt(this.value) || 1;
+                    processQuantity(qty, isAdd, barcode);
+                }
+            };
+        }
+
+        function processQuantity(qty, isAdd, barcode) {
+            qty = parseInt(qty);
+            
+            if (isAdd) {
+                inventory[barcode] = (inventory[barcode] || 0) + qty;
+            } else {
+                if (inventory[barcode]) {
+                    inventory[barcode] = Math.max(0, inventory[barcode] - qty);
+                    if (inventory[barcode] === 0) {
+                        delete inventory[barcode];
+                    }
+                }
+            }
+            
+            saveInventory();
+            updateInventoryDisplay();
+            resetUI();
+        }
+
+        function resetUI() {
+            currentMode = null;
+            currentBarcode = null;
+            document.getElementById('quantitySelector').classList.remove('active');
+            document.getElementById('scanInputContainer').style.display = 'none';
+            document.getElementById('scanInput').value = '';
+            document.querySelector('.btn-add').style.background = '';
+            document.querySelector('.btn-remove').style.background = '';
+            document.getElementById('customQty').style.display = 'none';
+            document.getElementById('customQty').value = '';
+        }
+
+        function updateInventoryDisplay() {
+            const list = document.getElementById('inventoryList');
+            const emptyState = document.getElementById('emptyState');
+            const stats = document.getElementById('stats');
+            
+            list.innerHTML = '';
+            
+            let totalItems = 0;
+            let totalTypes = Object.keys(inventory).length;
+            
+            for (let barcode in inventory) {
+                if (inventory[barcode] > 0) {
+                    totalItems += inventory[barcode];
+                    const item = createItemElement(barcode, inventory[barcode]);
+                    list.appendChild(item);
+                }
+            }
+            
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('totalTypes').textContent = totalTypes;
+            
+            if (totalItems === 0) {
+                emptyState.style.display = 'block';
+                stats.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                stats.style.display = 'grid';
+            }
+        }
+
+        function createItemElement(barcode, quantity) {
+            const item = document.createElement('div');
+            item.className = 'item';
+            
+            // Nome leggibile dal codice (prende le ultime cifre/lettere)
+            const displayName = barcode.slice(-8).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            
+            item.innerHTML = `
+                <div class="item-info">
+                    <h3>${displayName}</h3>
+                    <p>Codice: ${barcode}</p>
+                </div>
+                <div class="item-qty">${quantity}</div>
+            `;
+            
+            return item;
+        }
+
+        function saveInventory() {
+            localStorage.setItem('mintInventory', JSON.stringify(inventory));
+        }
+
+        // Reset completo (utile per test)
+        function resetInventory() {
+            if (confirm('Vuoi resettare completamente l\'inventario?')) {
+                inventory = {};
+                saveInventory();
+                updateInventoryDisplay();
+            }
+        }
+    </script>
+</body>
+</html>
